@@ -107,23 +107,59 @@ class AdvancedTradingAnalyzer:
     def load_data_from_upload(self, uploaded_file) -> bool:
         """Cargar datos desde archivo subido con validación avanzada"""
         try:
+            st.info("📁 Procesando archivo...")
+            
             if uploaded_file.name.endswith('.xlsx') or uploaded_file.name.endswith('.xls'):
+                # Mostrar progreso
+                progress = st.progress(0)
+                progress.progress(20)
+                
                 excel_sheets = pd.read_excel(uploaded_file, sheet_name=None)
+                progress.progress(60)
+                
                 self.sheets = excel_sheets
-                st.success(f"✅ Excel cargado: {len(excel_sheets)} hojas detectadas")
+                progress.progress(100)
+                
+                st.success(f"✅ Excel cargado exitosamente:")
+                st.info(f"📊 **{len(excel_sheets)} hojas detectadas**")
+                
+                # Mostrar resumen de cada hoja
                 for sheet_name, data in excel_sheets.items():
-                    st.info(f"📊 {sheet_name}: {len(data)} transacciones")
+                    st.write(f"  • **{sheet_name}**: {len(data):,} transacciones")
+                    
+                # Limpiar barra de progreso
+                progress.empty()
                 return True
+                
             elif uploaded_file.name.endswith('.csv'):
+                progress = st.progress(0)
+                progress.progress(30)
+                
                 csv_data = pd.read_csv(uploaded_file)
+                progress.progress(80)
+                
                 self.sheets = {'main': csv_data}
-                st.success(f"✅ CSV cargado: {len(csv_data)} transacciones")
+                progress.progress(100)
+                
+                st.success(f"✅ CSV cargado exitosamente:")
+                st.info(f"📊 **{len(csv_data):,} transacciones detectadas**")
+                
+                # Mostrar columnas detectadas
+                st.write(f"  • **Columnas**: {', '.join(csv_data.columns[:5])}{'...' if len(csv_data.columns) > 5 else ''}")
+                
+                progress.empty()
                 return True
             else:
-                st.error("❌ Formato no soportado. Usa Excel (.xlsx, .xls) o CSV")
+                st.error("❌ **Formato no soportado**")
+                st.error("📋 Formatos aceptados: Excel (.xlsx, .xls) o CSV (.csv)")
                 return False
+                
         except Exception as e:
-            st.error(f"❌ Error cargando archivo: {str(e)}")
+            st.error(f"❌ **Error cargando archivo**: {str(e)}")
+            st.error("💡 **Posibles soluciones:**")
+            st.error("  • Verifica que el archivo no esté corrupto")
+            st.error("  • Asegúrate de que sea un archivo de trading válido")
+            st.error("  • Intenta con un formato diferente (Excel ↔ CSV)")
             return False
 
     def generate_comprehensive_analysis(self) -> Dict:
@@ -389,48 +425,83 @@ class AdvancedTradingAnalyzer:
         return analysis
     
     def generate_comprehensive_analysis(self) -> Dict:
-        """🧠 Análisis comprehensivo con IA"""
+        """🧠 ANÁLISIS COMPREHENSIVO MEJORADO CON IA AVANZADA"""
         if not self.sheets:
             return {}
         
+        st.info("🧠 Ejecutando análisis con IA avanzada...")
+        progress_bar = st.progress(0)
+        
         analysis = {
-            'financial_summary': {},
-            'performance_metrics': {},
-            'trading_analysis': {},
-            'risk_analysis': {},
+            'financial_insights': {},
             'temporal_analysis': {},
-            'alerts': []
+            'inactivity_patterns': {},
+            'trading_performance': {},
+            'risk_metrics': {},
+            'smart_alerts': [],
+            'predictive_insights': {},
+            'comparative_analysis': {}
         }
         
         total_pnl = 0
         total_trades = 0
-        all_dates = []
+        all_transactions = []
+        accounts_data = {}
         
-        for sheet_name, sheet_data in self.sheets.items():
+        progress_bar.progress(10)
+        
+        # Análisis por cuenta con IA
+        for idx, (sheet_name, sheet_data) in enumerate(self.sheets.items()):
             if sheet_data is None or sheet_data.empty:
                 continue
             
-            sheet_analysis = self._analyze_sheet(sheet_data, sheet_name)
-            analysis['financial_summary'][sheet_name] = sheet_analysis
+            progress_bar.progress(20 + (idx * 30 // len(self.sheets)))
             
-            # Acumular métricas globales
-            if 'pnl_total' in sheet_analysis:
-                total_pnl += sheet_analysis['pnl_total']
-            if 'total_trades' in sheet_analysis:
-                total_trades += sheet_analysis['total_trades']
-            if 'dates' in sheet_analysis:
-                all_dates.extend(sheet_analysis['dates'])
+            # Análisis profundo por cuenta
+            account_analysis = self._deep_account_analysis(sheet_data, sheet_name)
+            analysis['financial_insights'][sheet_name] = account_analysis
+            
+            # Recopilar datos globales
+            if 'pnl_total' in account_analysis:
+                total_pnl += account_analysis['pnl_total']
+            if 'total_trades' in account_analysis:
+                total_trades += account_analysis['total_trades']
+            if 'all_transactions' in account_analysis:
+                all_transactions.extend(account_analysis['all_transactions'])
+            
+            accounts_data[sheet_name] = account_analysis
         
-        # Métricas globales
-        analysis['performance_metrics'] = {
-            'total_pnl': total_pnl,
-            'total_trades': total_trades,
-            'total_accounts': len([s for s in self.sheets.values() if not s.empty]),
-            'date_range': self._get_date_range(all_dates) if all_dates else None
-        }
+        progress_bar.progress(60)
         
-        # Generar alertas inteligentes
-        analysis['alerts'] = self._generate_smart_alerts(analysis)
+        # Análisis temporal avanzado
+        analysis['temporal_analysis'] = self._advanced_temporal_analysis(accounts_data)
+        
+        progress_bar.progress(70)
+        
+        # Análisis de inactividad inteligente
+        analysis['inactivity_patterns'] = self._intelligent_inactivity_analysis(accounts_data)
+        
+        progress_bar.progress(80)
+        
+        # Análisis de rendimiento de trading
+        analysis['trading_performance'] = self._advanced_trading_performance(accounts_data)
+        
+        progress_bar.progress(90)
+        
+        # Métricas de riesgo avanzadas
+        analysis['risk_metrics'] = self._calculate_advanced_risk_metrics(accounts_data, total_pnl, total_trades)
+        
+        # Alertas inteligentes mejoradas
+        analysis['smart_alerts'] = self._generate_smart_alerts_advanced(analysis)
+        
+        # Insights predictivos
+        analysis['predictive_insights'] = self._generate_predictive_insights(accounts_data, all_transactions)
+        
+        # Análisis comparativo
+        analysis['comparative_analysis'] = self._comparative_analysis(accounts_data)
+        
+        progress_bar.progress(100)
+        self.comprehensive_insights = analysis
         
         return analysis
     
@@ -1268,7 +1339,31 @@ def main():
         help="Soporta archivos de BingX, Binance, y otros exchanges"
     )
     
+    # Botón manual para analizar
+    analyze_button = st.sidebar.button("🚀 Analizar Archivo", type="primary", disabled=(uploaded_file is None))
+    
+    # Procesar archivo automáticamente o con botón
+    should_analyze = False
+    
     if uploaded_file is not None:
+        # Verificar si es un archivo nuevo
+        file_key = f"{uploaded_file.name}_{uploaded_file.size}"
+        
+        # Analizar automáticamente si es nuevo archivo
+        if ('current_file' not in st.session_state or 
+            st.session_state['current_file'] != file_key):
+            should_analyze = True
+        
+        # O si se presiona el botón manualmente
+        if analyze_button:
+            should_analyze = True
+        
+        # Mostrar info del archivo cargado
+        st.sidebar.success(f"📄 **{uploaded_file.name}**")
+        st.sidebar.info(f"📏 Tamaño: {uploaded_file.size / 1024:.1f} KB")
+    
+    if should_analyze and uploaded_file is not None:
+    if should_analyze and uploaded_file is not None:
         # Cargar y analizar datos
         with st.spinner("🧠 Analizando con IA avanzada..."):
             if analyzer.load_data_from_upload(uploaded_file):
@@ -1278,10 +1373,30 @@ def main():
                 # Guardar en session state
                 st.session_state['analysis'] = analysis
                 st.session_state['analyzer'] = analyzer
+                st.session_state['current_file'] = f"{uploaded_file.name}_{uploaded_file.size}"
+                
+                # Mensaje de éxito
+                st.success("✅ ¡Análisis completado! Revisa los resultados abajo.")
+                
+                # Forzar refresco para mostrar resultados inmediatamente
+                st.rerun()
+            else:
+                st.error("❌ Error procesando el archivo. Verifica el formato.")
+    
+    elif uploaded_file is not None and 'analysis' in st.session_state:
+        # Archivo ya procesado
+        st.sidebar.info("✅ Archivo ya analizado")
     
     # Mostrar análisis si existe
     if 'analysis' in st.session_state:
         analysis = st.session_state['analysis']
+        
+        # Mostrar mensaje de archivo analizado
+        current_file = st.session_state.get('current_file', 'archivo_desconocido')
+        file_name = current_file.split('_')[0] if '_' in current_file else current_file
+        
+        st.success(f"📊 **Análisis activo**: {file_name}")
+        st.markdown("---")
         
         # Opciones del sidebar
         st.sidebar.markdown("### 📊 Secciones de Análisis")
@@ -1321,6 +1436,19 @@ def main():
                 file_name=f"trading_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                 mime="text/plain"
             )
+        
+        # Botón para limpiar análisis
+        st.sidebar.markdown("### 🔄 Nuevo Análisis")
+        if st.sidebar.button("🗑️ Limpiar y Empezar de Nuevo", type="secondary"):
+            # Limpiar session state
+            for key in ['analysis', 'analyzer', 'current_file']:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+    
+    elif uploaded_file is not None:
+        # Archivo subido pero no analizado
+        st.info("📄 Archivo cargado. Presiona '🚀 Analizar Archivo' para comenzar el análisis.")
     
     else:
         # Pantalla de bienvenida mejorada
