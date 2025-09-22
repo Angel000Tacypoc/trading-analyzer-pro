@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🚀 Trading Analyzer Pro
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
@@ -176,3 +177,6 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 **🚀 ¡Transforma tus datos de trading en insights accionables con IA!**
 
 Desarrollado con ❤️ usando Streamlit
+=======
+# trading-analyzer-pro
+>>>>>>> 4cd5edf7b0a1285ecf809f730704b171786799b5
