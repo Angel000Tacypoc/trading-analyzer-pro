@@ -874,12 +874,12 @@ class AdvancedTradingAnalyzer:
 # ============================================================================
 
 def create_comprehensive_dashboard(analysis: Dict):
-    """🚀 Dashboard Comprehensivo con IA Avanzada"""
+    """🚀 Dashboard Comprehensivo centrado en PnL"""
     
     st.markdown('''
     <div class="main-header">
-        <h1>🧠 Trading Analyzer Pro</h1>
-        <p>Análisis inteligente de trading con insights predictivos</p>
+        <h1>💰 Trading Analyzer Pro - Dashboard PnL</h1>
+        <p>Análisis inteligente de ganancias y rendimiento</p>
     </div>
     ''', unsafe_allow_html=True)
     
@@ -890,18 +890,12 @@ def create_comprehensive_dashboard(analysis: Dict):
     # Alertas inteligentes destacadas
     if 'smart_alerts' in analysis:
         create_smart_alerts_section(analysis)
-    
-    # Análisis de inactividad
-    if 'inactivity_patterns' in analysis:
-        create_inactivity_analysis_section(analysis)
-    
-    # Análisis temporal avanzado
-    if 'temporal_analysis' in analysis:
-        create_temporal_analysis_section(analysis)
-    
-    # Insights predictivos
-    if 'predictive_insights' in analysis:
-        create_predictive_insights_section(analysis)
+    else:
+        st.markdown('''
+        <div class="performance-excellent">
+            <h4>✅ No hay alertas críticas - Todo funciona correctamente</h4>
+        </div>
+        ''', unsafe_allow_html=True)
 
 def create_advanced_metrics_section(analysis: Dict):
     """📊 Sección de métricas avanzadas"""
