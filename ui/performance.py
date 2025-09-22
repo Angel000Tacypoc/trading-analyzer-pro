@@ -8,7 +8,22 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 from typing import Dict
-from .styles import get_status_color, format_currency, format_percentage, get_trend_icon, get_status_icon
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from ui.styles import get_status_color, format_currency, format_percentage, get_trend_icon, get_status_icon
+except ImportError:
+    # Fallback functions
+    def get_status_color(value, thresholds=None): return "trading-insight"
+    def format_currency(amount, currency="USDT"): return f"${amount:,.2f} {currency}"
+    def format_percentage(value, decimals=1): return f"{value:.{decimals}f}%"
+    def get_trend_icon(value): return "📈" if value > 0 else "📉" if value < 0 else "➡️"
+    def get_status_icon(value, positive_threshold=0): return "🟢" if value > positive_threshold else "🔴" if value < positive_threshold else "🟡"
+
 
 def create_performance_analysis_section(analysis: Dict):
     """💰 Análisis de rendimiento y PnL"""

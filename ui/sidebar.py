@@ -6,7 +6,33 @@ Componentes del panel lateral de control
 import streamlit as st
 from datetime import datetime
 from typing import Optional
-from ..config.settings import SUPPORTED_FILE_TYPES, UI_KEYS
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from config.settings import SUPPORTED_FILE_TYPES, UI_KEYS
+except ImportError:
+    # Fallback for direct execution
+    SUPPORTED_FILE_TYPES = ['xlsx', 'xls', 'csv']
+    UI_KEYS = {
+        "file_uploader": "main_file_uploader",
+        "analyze_button": "analyze_button_main",
+        "checkboxes": {
+            "dashboard": "main_cb_dashboard",
+            "performance": "main_cb_performance", 
+            "accounts": "main_cb_accounts",
+            "temporal": "main_cb_temporal",
+            "risk": "main_cb_risk"
+        },
+        "buttons": {
+            "export": "btn_export",
+            "download": "btn_download",
+            "clear": "btn_clear"
+        }
+    }
 
 def create_sidebar_header():
     """🎨 Header del sidebar"""
@@ -80,7 +106,14 @@ def create_export_section(analysis: dict):
     st.sidebar.markdown("### 📄 Exportar Análisis")
     
     if st.sidebar.button("📥 Generar Reporte IA", key=UI_KEYS["buttons"]["export"]):
-        from ..utils.report_generator import create_comprehensive_report
+        try:
+            from utils.report_generator import create_comprehensive_report
+        except ImportError:
+            try:
+                sys.path.append('..')
+                from utils.report_generator import create_comprehensive_report
+            except ImportError:
+                def create_comprehensive_report(analysis): return "Reporte no disponible"
         
         report_content = create_comprehensive_report(analysis)
         st.sidebar.download_button(

@@ -5,10 +5,34 @@ Componentes principales del dashboard
 
 import streamlit as st
 from typing import Dict
-from .styles import apply_custom_styles
-from .metrics import create_advanced_metrics_section
-from .charts import create_performance_charts
-from ..config.settings import UI_KEYS
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from ui.styles import apply_custom_styles
+    from ui.metrics import create_advanced_metrics_section
+    from config.settings import UI_KEYS
+except ImportError:
+    # Fallback imports
+    try:
+        from .styles import apply_custom_styles
+        from .metrics import create_advanced_metrics_section
+    except ImportError:
+        def apply_custom_styles(): pass
+        def create_advanced_metrics_section(analysis): pass
+    
+    UI_KEYS = {
+        "checkboxes": {
+            "dashboard": "main_cb_dashboard",
+            "performance": "main_cb_performance", 
+            "accounts": "main_cb_accounts",
+            "temporal": "main_cb_temporal",
+            "risk": "main_cb_risk"
+        }
+    }
 
 def create_comprehensive_dashboard(analysis: Dict):
     """🚀 Dashboard Comprehensivo centrado en PnL"""

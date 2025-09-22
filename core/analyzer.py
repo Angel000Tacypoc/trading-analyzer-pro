@@ -5,9 +5,25 @@ Clase principal del analizador de trading con IA avanzada
 
 import streamlit as st
 from typing import Dict, Any
-from .data_loader import DataLoader
-from .calculations import FinancialCalculator
-from ..config.settings import WIN_RATE_THRESHOLDS, PNL_THRESHOLDS
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from core.data_loader import DataLoader
+    from core.calculations import FinancialCalculator
+    from config.settings import WIN_RATE_THRESHOLDS, PNL_THRESHOLDS
+except ImportError:
+    # Fallback imports for different environments
+    from .data_loader import DataLoader
+    from .calculations import FinancialCalculator
+    try:
+        from config.settings import WIN_RATE_THRESHOLDS, PNL_THRESHOLDS
+    except ImportError:
+        WIN_RATE_THRESHOLDS = {"excellent": 70, "good": 50, "poor": 40}
+        PNL_THRESHOLDS = {"significant_profit": 1000, "significant_loss": -500}
 
 class AdvancedTradingAnalyzer:
     """🚀 Analizador de Trading Avanzado con IA - Versión Modular"""

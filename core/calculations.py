@@ -6,7 +6,21 @@ Módulo para cálculos financieros y métricas de trading
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
-from ..config.settings import PNL_KEYWORDS, DATE_KEYWORDS, TYPE_KEYWORDS, AMOUNT_KEYWORDS, TRADING_KEYWORDS
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from config.settings import PNL_KEYWORDS, DATE_KEYWORDS, TYPE_KEYWORDS, AMOUNT_KEYWORDS, TRADING_KEYWORDS
+except ImportError:
+    # Fallback for direct execution
+    PNL_KEYWORDS = ['realized_pnl', 'realized pnl', 'pnl', 'profit_loss', 'net_profit', 'amount']
+    DATE_KEYWORDS = ['time', 'date', 'utc', 'timestamp']
+    TYPE_KEYWORDS = ['type', 'side', 'action', 'operation']
+    AMOUNT_KEYWORDS = ['amount', 'pnl', 'balance', 'profit', 'loss', 'realized', 'unrealized', 'total', 'net']
+    TRADING_KEYWORDS = ['realized', 'pnl', 'fee', 'trade', 'buy', 'sell', 'long', 'short', 'open', 'close']
 
 class FinancialCalculator:
     """💰 Calculadora de métricas financieras avanzadas"""
