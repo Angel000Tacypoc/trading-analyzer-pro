@@ -878,7 +878,7 @@ def create_comprehensive_dashboard(analysis: Dict):
     
     st.markdown('''
     <div class="main-header">
-        <h1>🧠 Trading Analyzer Pro - IA Avanzada</h1>
+        <h1>🧠 Trading Analyzer Pro</h1>
         <p>Análisis inteligente de trading con insights predictivos</p>
     </div>
     ''', unsafe_allow_html=True)
@@ -1063,79 +1063,294 @@ def create_smart_alerts_section(analysis: Dict):
         </div>
         ''', unsafe_allow_html=True)
 
-def create_inactivity_analysis_section(analysis: Dict):
-    """⏰ Sección de análisis de inactividad"""
+def create_performance_analysis_section(analysis: Dict):
+    """💰 Análisis de rendimiento y PnL"""
     
-    st.subheader("⏰ Análisis de Períodos de Inactividad")
+    st.subheader("💰 Análisis de Ganancias y Pérdidas")
     
-    inactivity = analysis.get('inactivity_patterns', {})
-    account_inactivity = inactivity.get('account_inactivity', {})
+    performance = analysis.get('trading_performance', {})
+    overall = performance.get('overall_metrics', {})
+    account_comparison = performance.get('account_comparison', {})
     
-    if account_inactivity:
+    if not account_comparison:
+        st.warning("📊 No hay datos de rendimiento disponibles")
+        return
+    
+    # Métricas globales de PnL
+    col1, col2, col3 = st.columns(3)
+    
+    total_pnl = overall.get('total_pnl_all_accounts', 0)
+    positive_accounts = len([acc for acc, data in account_comparison.items() if data.get('pnl', 0) > 0])
+    total_accounts = len(account_comparison)
+    
+    with col1:
+        st.markdown(f'''
+        <div class="{'performance-excellent' if total_pnl > 0 else 'inactivity-alert'}">
+            <h3>💰 PnL Total</h3>
+            <h1>${total_pnl:,.2f}</h1>
+            <p>{'🟢 GANANCIA' if total_pnl > 0 else '🔴 PÉRDIDA'}</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    with col2:
+        success_rate = (positive_accounts / total_accounts * 100) if total_accounts > 0 else 0
+        st.markdown(f'''
+        <div class="{'performance-excellent' if success_rate > 50 else 'trading-insight'}">
+            <h3>📈 Cuentas Rentables</h3>
+            <h1>{positive_accounts}/{total_accounts}</h1>
+            <p>{success_rate:.1f}% exitosas</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    with col3:
+        global_win_rate = overall.get('global_win_rate', 0)
+        st.markdown(f'''
+        <div class="{'performance-excellent' if global_win_rate > 50 else 'inactivity-alert' if global_win_rate < 40 else 'trading-insight'}">
+            <h3>🎯 Win Rate Global</h3>
+            <h1>{global_win_rate:.1f}%</h1>
+            <p>{'🏆 Excelente' if global_win_rate > 60 else '⚖️ Balanceado' if global_win_rate > 40 else '⚠️ Mejorable'}</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    # Gráfico de distribución de PnL
+    st.subheader("📊 Distribución de Ganancias por Cuenta")
+    
+    accounts = list(account_comparison.keys())
+    pnl_values = [account_comparison[acc]['pnl'] for acc in accounts]
+    
+    # Crear gráfico único sin duplicados
+    fig_pnl_dist = go.Figure()
+    
+    colors = ['#00d2d3' if pnl > 0 else '#ff6b6b' for pnl in pnl_values]
+    
+    fig_pnl_dist.add_trace(go.Bar(
+        x=accounts,
+        y=pnl_values,
+        marker_color=colors,
+        text=[f'${pnl:,.0f}' for pnl in pnl_values],
+        textposition='auto',
+        hovertemplate='<b>%{x}</b><br>PnL: $%{y:,.2f}<extra></extra>',
+        name='PnL por Cuenta'
+    ))
+    
+    fig_pnl_dist.update_layout(
+        title="💰 PnL por Cuenta - Vista General",
+        xaxis_title="Cuenta",
+        yaxis_title="PnL (USDT)",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#2c3e50'),
+        showlegend=False,
+        height=400
+    )
+    
+    fig_pnl_dist.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5, annotation_text="Break Even")
+    
+    st.plotly_chart(fig_pnl_dist, use_container_width=True, key="pnl_distribution_main")
+    
+    # Análisis de rentabilidad por cuenta
+    st.subheader("📈 Detalles de Rentabilidad")
+    
+    for account, data in account_comparison.items():
+        pnl = data.get('pnl', 0)
+        win_rate = data.get('win_rate', 0)
+        total_trades = data.get('total_trades', 0)
+        profit_factor = data.get('profit_factor', 0)
+        
+        status_class = "performance-excellent" if pnl > 0 else "inactivity-alert"
+        status_icon = "🟢" if pnl > 0 else "🔴"
+        
+        st.markdown(f'''
+        <div class="{status_class}">
+            <h4>{status_icon} {account}</h4>
+            <div style="display: flex; justify-content: space-between;">
+                <div><strong>PnL:</strong> ${pnl:,.2f}</div>
+                <div><strong>Win Rate:</strong> {win_rate:.1f}%</div>
+                <div><strong>Trades:</strong> {total_trades:,}</div>
+                <div><strong>Profit Factor:</strong> {profit_factor:.2f}</div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+def create_account_pnl_comparison(analysis: Dict):
+    """🏦 Comparación detallada de PnL entre cuentas"""
+    
+    st.subheader("🏦 Comparación Detallada de Cuentas")
+    
+    performance = analysis.get('trading_performance', {})
+    account_comparison = performance.get('account_comparison', {})
+    
+    if not account_comparison:
+        st.warning("📊 No hay datos de cuentas para comparar")
+        return
+    
+    # Crear tabs para diferentes vistas
+    tab1, tab2, tab3 = st.tabs(["💰 PnL", "🎯 Win Rate", "📊 Métricas Completas"])
+    
+    accounts = list(account_comparison.keys())
+    
+    with tab1:
+        st.markdown("### 💰 Análisis de PnL")
+        
+        pnl_data = []
+        for account, data in account_comparison.items():
+            pnl = data.get('pnl', 0)
+            pnl_data.append({
+                'Cuenta': account,
+                'PnL (USDT)': f"${pnl:,.2f}",
+                'Estado': '🟢 Ganancia' if pnl > 0 else '🔴 Pérdida',
+                'Rendimiento': f"{((pnl / abs(pnl)) * 100) if pnl != 0 else 0:.1f}%"
+            })
+        
+        # Ordenar por PnL descendente
+        pnl_data.sort(key=lambda x: float(x['PnL (USDT)'].replace('$', '').replace(',', '')), reverse=True)
+        
+        df_pnl = pd.DataFrame(pnl_data)
+        st.dataframe(df_pnl, use_container_width=True, hide_index=True)
+    
+    with tab2:
+        st.markdown("### 🎯 Análisis de Win Rate")
+        
         col1, col2 = st.columns(2)
         
-        with col1:
-            st.markdown("### 📊 Resumen de Inactividad")
-            
-            for account, data in account_inactivity.items():
-                risk_level = data['risk_level']
-                max_gap = data['max_inactivity_days']
-                total_gaps = data['total_gaps']
-                
-                risk_color = "inactivity-alert" if risk_level == 'high' else "trading-insight" if risk_level == 'medium' else "performance-excellent"
-                
-                st.markdown(f'''
-                <div class="{risk_color}">
-                    <h4>🏦 {account}</h4>
-                    <p><strong>Máximo período inactivo:</strong> {max_gap} días</p>
-                    <p><strong>Total de gaps:</strong> {total_gaps}</p>
-                    <p><strong>Nivel de riesgo:</strong> {risk_level.upper()}</p>
-                </div>
-                ''', unsafe_allow_html=True)
+        win_rates = [account_comparison[acc]['win_rate'] for acc in accounts]
         
-        with col2:
-            # Gráfico de inactividad
-            accounts = list(account_inactivity.keys())
-            max_gaps = [account_inactivity[acc]['max_inactivity_days'] for acc in accounts]
+        with col1:
+            # Gráfico de barras Win Rate
+            fig_wr = go.Figure()
             
-            fig_gaps = go.Figure()
+            colors_wr = ['#00d2d3' if wr > 50 else '#feca57' if wr > 40 else '#ff6b6b' for wr in win_rates]
             
-            colors_gaps = ['#ff6b6b' if gap > 30 else '#feca57' if gap > 7 else '#00d2d3' for gap in max_gaps]
-            
-            fig_gaps.add_trace(go.Bar(
+            fig_wr.add_trace(go.Bar(
                 x=accounts,
-                y=max_gaps,
-                marker_color=colors_gaps,
-                text=[f'{gap}d' for gap in max_gaps],
+                y=win_rates,
+                marker_color=colors_wr,
+                text=[f'{wr:.1f}%' for wr in win_rates],
                 textposition='auto',
-                hovertemplate='<b>%{x}</b><br>Máximo gap: %{y} días<extra></extra>'
+                hovertemplate='<b>%{x}</b><br>Win Rate: %{y:.1f}%<extra></extra>'
             ))
             
-            fig_gaps.update_layout(
-                title="📊 Máximos Períodos de Inactividad",
+            fig_wr.update_layout(
+                title="🎯 Win Rate por Cuenta",
                 xaxis_title="Cuenta",
-                yaxis_title="Días",
+                yaxis_title="Win Rate (%)",
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                showlegend=False
+                showlegend=False,
+                height=400
             )
             
-            st.plotly_chart(fig_gaps, use_container_width=True)
-    else:
+            fig_wr.add_hline(y=50, line_dash="dash", line_color="gray", opacity=0.5, annotation_text="Break Even")
+            
+            st.plotly_chart(fig_wr, use_container_width=True, key="win_rate_comparison")
+        
+        with col2:
+            # Tabla de Win Rate
+            wr_data = []
+            for account, data in account_comparison.items():
+                win_rate = data.get('win_rate', 0)
+                total_trades = data.get('total_trades', 0)
+                wr_data.append({
+                    'Cuenta': account,
+                    'Win Rate': f"{win_rate:.1f}%",
+                    'Total Trades': f"{total_trades:,}",
+                    'Calificación': '🏆 Excelente' if win_rate > 70 else '✅ Bueno' if win_rate > 50 else '⚠️ Mejorable'
+                })
+            
+            # Ordenar por Win Rate descendente
+            wr_data.sort(key=lambda x: float(x['Win Rate'].replace('%', '')), reverse=True)
+            
+            df_wr = pd.DataFrame(wr_data)
+            st.dataframe(df_wr, use_container_width=True, hide_index=True)
+    
+    with tab3:
+        st.markdown("### 📊 Métricas Completas")
+        
+        complete_data = []
+        for account, data in account_comparison.items():
+            complete_data.append({
+                'Cuenta': account,
+                'PnL': f"${data.get('pnl', 0):,.2f}",
+                'Win Rate': f"{data.get('win_rate', 0):.1f}%",
+                'Total Trades': f"{data.get('total_trades', 0):,}",
+                'Profit Factor': f"{data.get('profit_factor', 0):.2f}",
+                'Max Drawdown': f"${data.get('max_drawdown', 0):,.2f}",
+                'Expectancy': f"{data.get('expectancy', 0):.2f}"
+            })
+        
+        df_complete = pd.DataFrame(complete_data)
+        st.dataframe(df_complete, use_container_width=True, hide_index=True)
+
+def create_pnl_insights_section(analysis: Dict):
+    """🔮 Insights centrados en PnL"""
+    
+    st.subheader("🔮 Insights de Rendimiento")
+    
+    performance = analysis.get('trading_performance', {})
+    account_comparison = performance.get('account_comparison', {})
+    predictive = analysis.get('predictive_insights', {})
+    
+    if not account_comparison:
+        return
+    
+    # Análisis automático de rendimiento
+    total_pnl = sum(data.get('pnl', 0) for data in account_comparison.values())
+    profitable_accounts = [acc for acc, data in account_comparison.items() if data.get('pnl', 0) > 0]
+    loss_accounts = [acc for acc, data in account_comparison.items() if data.get('pnl', 0) < 0]
+    
+    # Insights automáticos
+    if total_pnl > 1000:
         st.markdown('''
         <div class="performance-excellent">
-            <h4>✅ Excelente actividad constante - No se detectaron períodos significativos de inactividad</h4>
+            <h4>🎉 ¡RENDIMIENTO EXCEPCIONAL!</h4>
+            <p>Tu cartera está generando ganancias significativas. ¡Excelente trabajo!</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    elif total_pnl > 0:
+        st.markdown('''
+        <div class="trading-insight">
+            <h4>📈 Rendimiento Positivo</h4>
+            <p>Tu cartera está en verde. Mantén la estrategia actual.</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    else:
+        st.markdown('''
+        <div class="inactivity-alert">
+            <h4>⚠️ Rendimiento Negativo</h4>
+            <p>Considera revisar tu estrategia de trading. Hay oportunidades de mejora.</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    # Recomendaciones específicas
+    if profitable_accounts:
+        st.markdown(f'''
+        <div class="performance-excellent">
+            <h4>✅ Cuentas Rentables: {len(profitable_accounts)}</h4>
+            <p><strong>Mejor cuenta:</strong> {max(profitable_accounts, key=lambda x: account_comparison[x]['pnl'])}</p>
+            <p><strong>Recomendación:</strong> Analiza qué hace exitosa esta cuenta y replica en otras.</p>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    if loss_accounts:
+        worst_account = min(loss_accounts, key=lambda x: account_comparison[x]['pnl'])
+        worst_loss = account_comparison[worst_account]['pnl']
+        st.markdown(f'''
+        <div class="inactivity-alert">
+            <h4>⚠️ Cuentas con Pérdidas: {len(loss_accounts)}</h4>
+            <p><strong>Mayor pérdida:</strong> {worst_account} (${worst_loss:,.2f})</p>
+            <p><strong>Recomendación:</strong> Revisa la estrategia de esta cuenta o considera pausar el trading.</p>
         </div>
         ''', unsafe_allow_html=True)
 
 def create_temporal_analysis_section(analysis: Dict):
-    """🕐 Sección de análisis temporal"""
+    """🕐 Sección de análisis temporal centrado en rendimiento"""
     
-    st.subheader("🕐 Análisis Temporal Avanzado")
+    st.subheader("� Rendimiento por Tiempo")
     
     temporal = analysis.get('temporal_analysis', {})
     global_patterns = temporal.get('global_activity_patterns', {})
-    seasonality = temporal.get('seasonality_analysis', {})
+    performance = analysis.get('trading_performance', {})
+    account_comparison = performance.get('account_comparison', {})
     
     if global_patterns:
         col1, col2, col3 = st.columns(3)
@@ -1146,7 +1361,7 @@ def create_temporal_analysis_section(analysis: Dict):
             <div class="trading-insight">
                 <h4>📅 Día Más Activo</h4>
                 <h3>{most_active_day}</h3>
-                <p>Mayor frecuencia de trading</p>
+                <p>Mayor volumen de trading</p>
             </div>
             ''', unsafe_allow_html=True)
         
@@ -1164,71 +1379,46 @@ def create_temporal_analysis_section(analysis: Dict):
             total_period = global_patterns.get('total_period_days', 0)
             st.markdown(f'''
             <div class="trading-insight">
-                <h4>📊 Período Total</h4>
+                <h4>📊 Período Analizado</h4>
                 <h3>{total_period} días</h3>
                 <p>Duración del análisis</p>
             </div>
             ''', unsafe_allow_html=True)
     
-    if seasonality and 'seasonal_pattern' in seasonality:
-        pattern = seasonality['seasonal_pattern']
-        peak_season = seasonality.get('peak_season', 'N/A')
-        low_season = seasonality.get('low_season', 'N/A')
+    # Insights de rendimiento temporal
+    if account_comparison:
+        st.markdown("### 📈 Patrones de Rendimiento")
+        
+        best_performer = max(account_comparison.items(), key=lambda x: x[1].get('pnl', 0))
+        worst_performer = min(account_comparison.items(), key=lambda x: x[1].get('pnl', 0))
         
         st.markdown(f'''
-        <div class="insight-card">
-            <h4>🌟 Análisis de Estacionalidad</h4>
-            <p><strong>Patrón detectado:</strong> {pattern}</p>
-            <p><strong>Temporada alta:</strong> Mes {peak_season}</p>
-            <p><strong>Temporada baja:</strong> Mes {low_season}</p>
-        </div>
-        ''', unsafe_allow_html=True)
-
-def create_predictive_insights_section(analysis: Dict):
-    """🔮 Sección de insights predictivos"""
-    
-    st.subheader("🔮 Insights Predictivos con IA")
-    
-    predictive = analysis.get('predictive_insights', {})
-    recommendations = predictive.get('recommendations', [])
-    
-    if recommendations:
-        st.markdown("### 🎯 Recomendaciones Inteligentes")
-        
-        for recommendation in recommendations:
-            if "✅" in recommendation:
-                st.markdown(f'''
-                <div class="performance-excellent">
-                    <h4>{recommendation}</h4>
-                </div>
-                ''', unsafe_allow_html=True)
-            elif "🎯" in recommendation:
-                st.markdown(f'''
-                <div class="inactivity-alert">
-                    <h4>{recommendation}</h4>
-                </div>
-                ''', unsafe_allow_html=True)
-            else:
-                st.markdown(f'''
-                <div class="trading-insight">
-                    <h4>{recommendation}</h4>
-                </div>
-                ''', unsafe_allow_html=True)
-    else:
-        st.markdown('''
         <div class="performance-excellent">
-            <h4>✅ Todas las cuentas muestran patrones de trading saludables</h4>
+            <h4>� Mejor Rendimiento: {best_performer[0]}</h4>
+            <p>PnL: ${best_performer[1].get('pnl', 0):,.2f} | Win Rate: {best_performer[1].get('win_rate', 0):.1f}%</p>
         </div>
         ''', unsafe_allow_html=True)
+        
+        if worst_performer[1].get('pnl', 0) < 0:
+            st.markdown(f'''
+            <div class="inactivity-alert">
+                <h4>⚠️ Menor Rendimiento: {worst_performer[0]}</h4>
+                <p>PnL: ${worst_performer[1].get('pnl', 0):,.2f} | Win Rate: {worst_performer[1].get('win_rate', 0):.1f}%</p>
+            </div>
+            ''', unsafe_allow_html=True)
+
+
 
 def create_advanced_risk_analysis(analysis: Dict):
-    """⚠️ Análisis avanzado de riesgo"""
+    """⚠️ Análisis avanzado de riesgo simplificado"""
     
-    st.subheader("⚠️ Análisis de Riesgo Avanzado")
+    st.subheader("⚠️ Análisis de Riesgo")
     
     risk_metrics = analysis.get('risk_metrics', {})
     portfolio_risk = risk_metrics.get('portfolio_risk', {})
     individual_risks = risk_metrics.get('individual_risks', {})
+    performance = analysis.get('trading_performance', {})
+    account_comparison = performance.get('account_comparison', {})
     
     if portfolio_risk:
         col1, col2 = st.columns(2)
@@ -1237,30 +1427,51 @@ def create_advanced_risk_analysis(analysis: Dict):
             volatility = portfolio_risk.get('total_portfolio_volatility', 0)
             sharpe = portfolio_risk.get('portfolio_sharpe_ratio', 0)
             
+            risk_level = "Bajo" if sharpe > 1 else "Medio" if sharpe > 0.5 else "Alto"
+            risk_color = "performance-excellent" if sharpe > 1 else "trading-insight" if sharpe > 0.5 else "inactivity-alert"
+            
             st.markdown(f'''
-            <div class="metric-premium">
+            <div class="{risk_color}">
                 <h4>📊 Riesgo de Cartera</h4>
                 <p><strong>Volatilidad:</strong> {volatility:.2f}</p>
                 <p><strong>Ratio Sharpe:</strong> {sharpe:.2f}</p>
-                <p><strong>Clasificación:</strong> {'🟢 Bajo' if sharpe > 1 else '🟡 Medio' if sharpe > 0.5 else '🔴 Alto'}</p>
+                <p><strong>Nivel de Riesgo:</strong> {risk_level}</p>
             </div>
             ''', unsafe_allow_html=True)
         
         with col2:
-            if individual_risks:
-                st.markdown("### 🏦 Riesgo por Cuenta")
-                for account, risk_data in individual_risks.items():
-                    risk_level = risk_data.get('risk_level', 'unknown')
-                    sharpe_individual = risk_data.get('sharpe_ratio', 0)
-                    
-                    color_class = "performance-excellent" if risk_level == 'low' else "inactivity-alert"
-                    
+            if account_comparison:
+                # Mostrar cuentas por nivel de riesgo
+                high_risk_accounts = []
+                low_risk_accounts = []
+                
+                for account, data in account_comparison.items():
+                    max_drawdown = abs(data.get('max_drawdown', 0))
+                    if max_drawdown > 1000:
+                        high_risk_accounts.append(f"{account} (${max_drawdown:,.0f})")
+                    else:
+                        low_risk_accounts.append(f"{account} (${max_drawdown:,.0f})")
+                
+                if high_risk_accounts:
                     st.markdown(f'''
-                    <div class="{color_class}">
-                        <h5>{account}</h5>
-                        <p>Sharpe: {sharpe_individual:.2f} | Riesgo: {risk_level.upper()}</p>
+                    <div class="inactivity-alert">
+                        <h4>⚠️ Cuentas de Alto Riesgo</h4>
+                        <p>{", ".join(high_risk_accounts[:3])}</p>
+                        <p><small>Drawdown elevado</small></p>
                     </div>
                     ''', unsafe_allow_html=True)
+                
+                if low_risk_accounts:
+                    st.markdown(f'''
+                    <div class="performance-excellent">
+                        <h4>✅ Cuentas de Bajo Riesgo</h4>
+                        <p>{", ".join(low_risk_accounts[:3])}</p>
+                        <p><small>Drawdown controlado</small></p>
+                    </div>
+                    ''', unsafe_allow_html=True)
+    
+    else:
+        st.info("📊 Análisis de riesgo no disponible con los datos actuales")
 
 def create_comprehensive_report(analysis: Dict) -> str:
     """📄 Generar reporte comprehensivo"""
@@ -1398,21 +1609,25 @@ def main():
         st.success(f"📊 **Análisis activo**: {file_name}")
         st.markdown("---")
         
-        # Opciones del sidebar
-        st.sidebar.markdown("### 📊 Secciones de Análisis")
-        show_dashboard = st.sidebar.checkbox("🚀 Dashboard Principal", value=True)
-        show_inactivity = st.sidebar.checkbox("⏰ Análisis de Inactividad", value=True)
-        show_temporal = st.sidebar.checkbox("🕐 Análisis Temporal", value=True)
-        show_risk = st.sidebar.checkbox("⚠️ Análisis de Riesgo", value=True)
-        show_predictions = st.sidebar.checkbox("🔮 Insights Predictivos", value=True)
+        # Opciones del sidebar - ENFOQUE EN RENDIMIENTO
+        st.sidebar.markdown("### 📊 Análisis de Rendimiento")
+        show_dashboard = st.sidebar.checkbox("� Dashboard Principal (PnL)", value=True)
+        show_performance = st.sidebar.checkbox("📈 Análisis de Ganancias", value=True)
+        show_accounts = st.sidebar.checkbox("🏦 Comparación de Cuentas", value=True)
+        show_temporal = st.sidebar.checkbox("📅 Rendimiento por Tiempo", value=False)
+        show_risk = st.sidebar.checkbox("⚠️ Análisis de Riesgo", value=False)
         
-        # Renderizar secciones
+        # Renderizar secciones CENTRADAS EN PnL
         if show_dashboard:
             create_comprehensive_dashboard(analysis)
             st.markdown("---")
         
-        if show_inactivity:
-            create_inactivity_analysis_section(analysis)
+        if show_performance:
+            create_performance_analysis_section(analysis)
+            st.markdown("---")
+        
+        if show_accounts:
+            create_account_pnl_comparison(analysis)
             st.markdown("---")
         
         if show_temporal:
@@ -1423,8 +1638,8 @@ def main():
             create_advanced_risk_analysis(analysis)
             st.markdown("---")
         
-        if show_predictions:
-            create_predictive_insights_section(analysis)
+        # Siempre mostrar insights predictivos (centrados en PnL)
+        create_pnl_insights_section(analysis)
         
         # Exportación avanzada
         st.sidebar.markdown("### 📄 Exportar Análisis")
