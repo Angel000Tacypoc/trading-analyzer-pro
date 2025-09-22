@@ -6,7 +6,17 @@ Módulo para carga y validación de datos de trading
 import pandas as pd
 import streamlit as st
 from typing import Dict, Optional
-from ..config.settings import SUPPORTED_FILE_TYPES
+import sys
+import os
+
+# Add project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from config.settings import SUPPORTED_FILE_TYPES
+except ImportError:
+    # Fallback for direct execution
+    SUPPORTED_FILE_TYPES = ['xlsx', 'xls', 'csv']
 
 class DataLoader:
     """🔄 Cargador de datos de trading con validación"""
