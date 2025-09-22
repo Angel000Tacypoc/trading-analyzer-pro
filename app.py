@@ -1362,7 +1362,7 @@ def main():
         st.sidebar.success(f"📄 **{uploaded_file.name}**")
         st.sidebar.info(f"📏 Tamaño: {uploaded_file.size / 1024:.1f} KB")
     
-    if should_analyze and uploaded_file is not None:
+    # Procesar el archivo si se debe analizar
     if should_analyze and uploaded_file is not None:
         # Cargar y analizar datos
         with st.spinner("🧠 Analizando con IA avanzada..."):
@@ -1511,24 +1511,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-    with col3:
-        total_accounts = metrics.get('total_accounts', 0)
-        st.metric(
-            label="🏦 Cuentas Activas",
-            value=f"{total_accounts}",
-            delta="Cuentas analizadas"
-        )
-    
-    with col4:
-        date_range = metrics.get('date_range')
-        if date_range:
-            days = date_range.get('duration_days', 0)
-            st.metric(
-                label="📅 Período",
-                value=f"{days} días",
-                delta=f"Desde {date_range['start'].strftime('%Y-%m-%d')}"
-            )
 
 def create_account_comparison(analysis: Dict):
     """📈 Comparación entre cuentas"""
@@ -1670,141 +1652,9 @@ def create_alerts_section(analysis: Dict):
     else:
         st.info("✅ No hay alertas en este momento")
 
-def main():
-    """🚀 Función principal de la aplicación"""
-    
-    # Sidebar
-    st.sidebar.markdown("## 🎛️ Control Panel")
-    st.sidebar.markdown("---")
-    
-    # Inicializar analizador
-    analyzer = TradingAnalyzerWeb()
-    
-    # Sección de carga de archivos
-    st.sidebar.markdown("### 📁 Cargar Archivo")
-    uploaded_file = st.sidebar.file_uploader(
-        "Selecciona tu archivo Excel o CSV",
-        type=['xlsx', 'xls', 'csv'],
-        help="Soporta archivos de BingX, Binance y otros exchanges"
-    )
-    
-    if uploaded_file is not None:
-        # Cargar datos
-        with st.spinner("🔄 Cargando y analizando datos..."):
-            if analyzer.load_data_from_upload(uploaded_file):
-                st.sidebar.success(f"✅ Archivo cargado: {uploaded_file.name}")
-                
-                # Generar análisis
-                analysis = analyzer.generate_comprehensive_analysis()
-                
-                # Guardar en session state para persistencia
-                st.session_state['analysis'] = analysis
-                st.session_state['analyzer'] = analyzer
-            else:
-                st.sidebar.error("❌ Error cargando archivo")
-    
-    # Mostrar análisis si existe
-    if 'analysis' in st.session_state:
-        analysis = st.session_state['analysis']
-        
-        # Opciones del sidebar
-        st.sidebar.markdown("### 📊 Secciones")
-        show_dashboard = st.sidebar.checkbox("📈 Dashboard Principal", value=True)
-        show_accounts = st.sidebar.checkbox("🏦 Análisis por Cuenta", value=True)
-        show_charts = st.sidebar.checkbox("📊 Gráficos Avanzados", value=True)
-        show_alerts = st.sidebar.checkbox("🚨 Alertas", value=True)
-        
-        # Renderizar secciones
-        if show_dashboard:
-            create_performance_dashboard(analysis)
-            st.markdown("---")
-        
-        if show_accounts:
-            create_account_comparison(analysis)
-            st.markdown("---")
-        
-        if show_charts:
-            create_advanced_charts(analysis)
-            st.markdown("---")
-        
-        if show_alerts:
-            create_alerts_section(analysis)
-        
-        # Botón de descarga de reporte
-        st.sidebar.markdown("### 📄 Exportar")
-        if st.sidebar.button("📥 Descargar Reporte"):
-            report_content = generate_report(analysis)
-            st.sidebar.download_button(
-                label="💾 Guardar Reporte",
-                data=report_content,
-                file_name=f"trading_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain"
-            )
-    
-    else:
-        # Pantalla de bienvenida
-        st.markdown("""
-        <div class="main-header">
-            <h1>🚀 Trading Analyzer Pro</h1>
-            <p>Análisis Avanzado de Trading con Inteligencia Artificial</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        ## 🎯 Características Principales
-        
-        ✅ **Análisis Multi-Cuenta**: Soporta múltiples cuentas y exchanges  
-        ✅ **Win Rate Inteligente**: Cálculo automático de tasas de éxito  
-        ✅ **Alertas IA**: Notificaciones inteligentes sobre tu rendimiento  
-        ✅ **Visualizaciones Avanzadas**: Gráficos interactivos con Plotly  
-        ✅ **Métricas de Riesgo**: Análisis de volatilidad y ratios  
-        ✅ **Exportación de Reportes**: Descarga análisis completos  
-        
-        ### 📁 Formatos Soportados
-        - **Excel**: .xlsx, .xls (con múltiples hojas)
-        - **CSV**: Archivos separados por comas
-        - **Exchanges**: BingX, Binance, y otros
-        
-        ### 🚀 ¡Comienza Ahora!
-        Sube tu archivo en el panel lateral para comenzar el análisis.
-        """)
-
-def generate_report(analysis: Dict) -> str:
-    """Generar reporte en texto"""
-    report = "🚀 TRADING ANALYZER PRO - REPORTE AVANZADO\n"
-    report += "=" * 60 + "\n"
-    report += f"📅 Generado: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-    
-    # Métricas principales
-    metrics = analysis.get('performance_metrics', {})
-    report += "💰 MÉTRICAS PRINCIPALES\n"
-    report += "-" * 30 + "\n"
-    report += f"PnL Total: ${metrics.get('total_pnl', 0):,.2f}\n"
-    report += f"Total Trades: {metrics.get('total_trades', 0):,}\n"
-    report += f"Cuentas Activas: {metrics.get('total_accounts', 0)}\n\n"
-    
-    # Detalles por cuenta
-    financial_data = analysis.get('financial_summary', {})
-    if financial_data:
-        report += "🏦 ANÁLISIS POR CUENTA\n"
-        report += "-" * 30 + "\n"
-        for account, data in financial_data.items():
-            report += f"\n📊 {account}:\n"
-            report += f"  PnL: ${data.get('pnl_total', 0):,.2f}\n"
-            if 'win_rate' in data:
-                report += f"  Win Rate: {data['win_rate']:.1f}%\n"
-            if 'total_trades' in data:
-                report += f"  Trades: {data['total_trades']}\n"
-    
-    # Alertas
-    alerts = analysis.get('alerts', [])
-    if alerts:
-        report += "\n🚨 ALERTAS\n"
-        report += "-" * 20 + "\n"
-        for alert in alerts:
-            report += f"• {alert}\n"
-    
-    return report
+# ============================================================================
+# FUNCIÓN PRINCIPAL (ÚNICA)
+# ============================================================================
 
 if __name__ == "__main__":
     main()
