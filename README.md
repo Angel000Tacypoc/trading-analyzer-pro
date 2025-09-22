@@ -1,13 +1,31 @@
-# 🚀 Trading Analyzer Pro 1.1
+# 🚀 Trading Analyzer Pro - Modular Architecture
 
-Una aplicación web avanzada para análisis de datos de trading con inteligencia artificial desarrollada en Streamlit.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://trading-analyzer-pro.streamlit.app)
 
-## ✨ Características
+## 🎯 **ESTADO ACTUAL: REFACTOR COMPLETADO**
 
-🎯 **Análisis Inteligente con IA**
+### ✅ **TRANSFORMACIÓN EXITOSA:**
 
-- Análisis automático de múltiples cuentas
-- Cálculo inteligente de Win Rate
+- **Arquitectura monolítica** (2,000 líneas) → **Modular profesional** (múltiples módulos)
+- **Código mezclado** → **Separación clara de responsabilidades**
+- **Elementos duplicados** → **Sistema de claves únicas**
+- **PnL básico** → **Análisis avanzado con valores absolutos + porcentajes**
+
+## 🔧 **PROBLEMA RESUELTO**
+
+### ❌ **Error Original:**
+
+```
+StreamlitDuplicateElementId: element_type='file_uploader'
+```
+
+### ✅ **Solución Implementada:**
+
+1. **Sistema de claves únicas** en `config/settings.py`
+2. **Todos los elementos UI** tienen keys específicos
+3. **Arquitectura modular** evita conflictos
+4. **Separación de responsabilidades** clara
+
 - Detección de patrones de trading
 - Alertas automáticas basadas en IA
 
