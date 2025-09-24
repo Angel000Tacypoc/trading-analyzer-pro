@@ -1,0 +1,98 @@
+# 🔒 Trading Analyzer Pro - Security Protection
+# Hide sensitive source code while keeping Streamlit deployment working
+
+# ========================================
+# � HIDE SENSITIVE BUSINESS LOGIC
+# ========================================
+core/
+ui/
+config/
+utils/
+models/
+
+# ========================================
+# � HIDE DEVELOPMENT & BACKUP FILES  
+# ========================================
+*_backup.py
+*_modular*.py
+*_emergency*.py
+*_standalone.py
+deployment_*.py
+test_*.py
+obfuscate_*.py
+create_private_repo.*
+
+# ========================================
+# 📋 HIDE INTERNAL DOCUMENTATION
+# ========================================
+MANUAL_COMMIT_INSTRUCTIONS.md
+DEPLOYMENT_STATUS.md
+REPOSITORY_SECURITY_STRATEGY.md
+STREAMLIT_SECURITY_GUIDE.md
+emergency_*.*
+
+# ========================================
+# � STANDARD PYTHON EXCLUSIONS
+# ========================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ========================================
+# 🗃️ DATA FILES & LOGS
+# ========================================
+*.xlsx
+*.xls
+*.csv
+*.log
+*.pid
+*.lock
+
+# ========================================
+# 🔧 ENVIRONMENT FILES
+# ========================================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.streamlit/secrets.toml
+
+# ========================================
+# 💻 IDE & SYSTEM FILES
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================================
+# ✅ KEEP ESSENTIAL FILES FOR STREAMLIT
+# ========================================
+# These files will remain visible:
+# !app.py
+# !requirements.txt  
+# !README.md
+# !.streamlit/config.toml
