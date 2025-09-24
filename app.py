@@ -149,6 +149,47 @@ class TradingAnalyzerStandalone:
         
         return self.sheet_filter
     
+    def _filter_non_trading_operations(self, df):
+        """🚫 Filtrar operaciones que no son de trading real"""
+        if len(df) == 0:
+            return df
+        
+        # Buscar columna de tipo de operación
+        type_col = None
+        possible_type_columns = ['type', 'operation', 'action', 'kind', 'category']
+        
+        for col in df.columns:
+            col_lower = col.lower()
+            if any(type_word in col_lower for type_word in possible_type_columns):
+                type_col = col
+                break
+        
+        if type_col is None:
+            # Si no hay columna de tipo, devolver DataFrame original
+            return df
+        
+        # Valores a excluir (operaciones no-trading)
+        non_trading_operations = [
+            'transfer', 'transferencia', 'deposit', 'deposito', 'withdrawal', 'retiro',
+            'funding', 'commission', 'comision', 'fee', 'bonus', 'rebate', 'cashback',
+            'interest', 'interes', 'staking', 'reward', 'recompensa', 'airdrop'
+        ]
+        
+        # Crear máscara para filtrar
+        mask = True
+        for operation in non_trading_operations:
+            mask = mask & (~df[type_col].str.lower().str.contains(operation, na=False))
+        
+        # Filtrar DataFrame
+        df_filtered = df[mask].copy()
+        
+        # 📊 Mostrar estadísticas de filtrado si hay sidebar
+        if hasattr(st, 'sidebar') and len(df) != len(df_filtered):
+            excluded_count = len(df) - len(df_filtered)
+            st.sidebar.info(f"🚫 **Operaciones no-trading excluidas:** {excluded_count:,}")
+        
+        return df_filtered
+    
     def load_file(self, uploaded_file):
         """📁 Cargar archivo"""
         try:
@@ -186,15 +227,18 @@ class TradingAnalyzerStandalone:
         results = {}
         
         for sheet_name, df in filtered_data.items():
+            # 🚫 Filtrar transferencias y operaciones no-trading
+            df_filtered = self._filter_non_trading_operations(df)
+            
             # Buscar columnas PnL
             pnl_col = None
-            for col in df.columns:
+            for col in df_filtered.columns:
                 if any(word in col.lower() for word in ['pnl', 'profit', 'amount', 'realized']):
                     pnl_col = col
                     break   
             
-            if pnl_col and len(df) > 0:
-                pnl_values = df[pnl_col].dropna()
+            if pnl_col and len(df_filtered) > 0:
+                pnl_values = df_filtered[pnl_col].dropna()
                 
                 if len(pnl_values) > 0:
                     profits = pnl_values[pnl_values > 0]
@@ -210,7 +254,9 @@ class TradingAnalyzerStandalone:
                         'avg_loss': float(losses.mean()) if len(losses) > 0 else 0,
                         'pnl_values': pnl_values.tolist(),
                         'pnl_column': pnl_col,  # 📊 Guardar nombre de columna detectada
-                        'total_rows': len(df)   # 📏 Total de filas en la hoja
+                        'total_rows': len(df),   # 📏 Total de filas en la hoja original
+                        'filtered_rows': len(df_filtered),  # 📏 Filas después de filtrar
+                        'excluded_operations': len(df) - len(df_filtered)  # 🚫 Operaciones excluidas
                     }
         
         return results
@@ -225,9 +271,6 @@ def main():
         <p>🔧 Versión Modular Activa - Elementos únicos implementados</p>
     </div>
     ''', unsafe_allow_html=True)
-    
-    # Sidebar
-    st.sidebar.markdown("## 🧠 Control Panel IA")
     
     # File uploader con clave única
     uploaded_file = st.sidebar.file_uploader(
@@ -327,12 +370,15 @@ def main():
                             account_class = "performance-excellent" if pnl > 0 else "inactivity-alert"
                             status_icon = "🟢" if pnl > 0 else "🔴"
                             
+                            excluded_ops = data.get('excluded_operations', 0)
+                            
                             st.markdown(f'''
                             <div class="{account_class}">
                                 <h4>{status_icon} {account}</h4>
                                 <p><strong>PnL:</strong> ${pnl:,.2f} | <strong>Win Rate:</strong> {win_rate:.1f}% | <strong>Trades:</strong> {trades:,}</p>
                                 <p><strong>Ganancias:</strong> ${data['total_profit']:,.2f} | <strong>Pérdidas:</strong> ${data['total_loss']:,.2f}</p>
                                 <p><small>📊 <strong>Columna PnL:</strong> {data.get('pnl_column', 'N/A')} | <strong>Filas totales:</strong> {data.get('total_rows', 'N/A'):,}</small></p>
+                                {f'<p><small>🚫 <strong>Transferencias excluidas:</strong> {excluded_ops:,}</small></p>' if excluded_ops > 0 else ''}
                             </div>
                             ''', unsafe_allow_html=True)
                         
@@ -395,8 +441,6 @@ def main():
                     
                     else:
                         st.warning("📊 No se encontraron datos de PnL válidos en el archivo")
-            else:
-                st.sidebar.info("🔧 Configura los filtros y presiona 'Analizar'")
         else:
             st.error("❌ Error cargando el archivo")
     
