@@ -393,8 +393,8 @@ def main():
                             </div>
                             ''', unsafe_allow_html=True)
                     
-                        else:
-                            st.warning("📊 No se encontraron datos de PnL válidos en el archivo")
+                    else:
+                        st.warning("📊 No se encontraron datos de PnL válidos en el archivo")
             else:
                 st.sidebar.info("🔧 Configura los filtros y presiona 'Analizar'")
         else:
