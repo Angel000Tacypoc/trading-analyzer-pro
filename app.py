@@ -11,6 +11,19 @@ from datetime import datetime
 from typing import Dict, Optional
 import io
 
+# Importar nuestro sistema de filtros
+try:
+    from sheet_filter import SheetFilter, CommonFilters
+except ImportError:
+    # Fallback si no se puede importar
+    class SheetFilter:
+        def filter_sheets(self, sheets): return sheets
+    class CommonFilters:
+        @staticmethod
+        def by_sheet_numbers(nums): return SheetFilter()
+        @staticmethod
+        def only_futures(): return SheetFilter()
+
 # 🎨 Configuración de la página
 st.set_page_config(
     page_title="Trading Analyzer Pro",
@@ -68,11 +81,73 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 class TradingAnalyzerStandalone:
-    """📊 Analizador de Trading Standalone - Versión Emergencia"""
+    """📊 Analizador de Trading Standalone - Versión Emergencia con Filtros"""
     
     def __init__(self):
         self.data = None
         self.analysis = {}
+        self.sheet_filter = SheetFilter()  # 🗂️ Sistema de filtros
+    
+    def set_sheet_filter(self, filter_obj: SheetFilter):
+        """🔧 Configurar filtro de hojas"""
+        self.sheet_filter = filter_obj
+        return self
+    
+    def create_sheet_selector_ui(self):
+        """🎮 UI para seleccionar hojas a analizar"""
+        if not self.data:
+            return None
+        
+        st.sidebar.markdown("### 🗂️ Filtros de Hojas")
+        
+        # Mostrar hojas disponibles
+        available_sheets = list(self.data.keys())
+        st.sidebar.write(f"📋 **Hojas encontradas:** {len(available_sheets)}")
+        
+        # Opciones de filtro
+        filter_mode = st.sidebar.selectbox(
+            "🔍 Modo de Filtro",
+            ["🤖 Auto-detectar", "📝 Seleccionar específicas", "🔢 Por números", "🏦 Por tipo de cuenta"],
+            key="filter_mode_selector"
+        )
+        
+        if filter_mode == "📝 Seleccionar específicas":
+            selected_sheets = st.sidebar.multiselect(
+                "✅ Selecciona hojas:",
+                options=available_sheets,
+                default=available_sheets,
+                key="sheet_multiselect"
+            )
+            self.sheet_filter = SheetFilter().add_sheets_by_names(selected_sheets)
+        
+        elif filter_mode == "🔢 Por números":
+            sheet_numbers = st.sidebar.multiselect(
+                "🔢 Números de hojas (1, 2, 3...):",
+                options=list(range(1, len(available_sheets) + 1)),
+                default=list(range(1, min(4, len(available_sheets) + 1))),
+                key="sheet_numbers"
+            )
+            self.sheet_filter = CommonFilters.by_sheet_numbers(sheet_numbers)
+        
+        elif filter_mode == "🏦 Por tipo de cuenta":
+            account_type = st.sidebar.selectbox(
+                "🏦 Tipo de cuenta:",
+                ["futures", "spot", "margin", "trading"],
+                key="account_type_selector"
+            )
+            self.sheet_filter = SheetFilter().add_account_filter(account_type)
+        
+        else:  # Auto-detectar
+            excluded = st.sidebar.multiselect(
+                "❌ Excluir hojas:",
+                options=available_sheets,
+                key="excluded_sheets"
+            )
+            self.sheet_filter = SheetFilter()
+            for sheet in excluded:
+                self.sheet_filter.exclude_sheet(sheet)
+        
+        return self.sheet_filter
     
     def load_file(self, uploaded_file):
         """📁 Cargar archivo"""
@@ -88,19 +163,35 @@ class TradingAnalyzerStandalone:
             return False
     
     def analyze_data(self):
-        """🧠 Análisis de datos"""
+        """🧠 Análisis de datos con filtros de hojas"""
         if not self.data:
             return {}
         
+        # 🗂️ Aplicar filtros de hojas
+        filtered_data = self.sheet_filter.filter_sheets(self.data)
+        
+        # 📊 Mostrar información de filtros en sidebar
+        if hasattr(st, 'sidebar'):
+            filter_summary = self.sheet_filter.get_filter_summary()
+            total_sheets = len(self.data)
+            filtered_sheets = len(filtered_data)
+            
+            st.sidebar.markdown("### 📊 Estado del Filtro")
+            st.sidebar.info(f"📋 **Total hojas:** {total_sheets}\n📍 **Analizando:** {filtered_sheets}")
+            
+            if filtered_sheets < total_sheets:
+                excluded_sheets = set(self.data.keys()) - set(filtered_data.keys())
+                st.sidebar.warning(f"❌ **Excluidas:** {', '.join(list(excluded_sheets)[:3])}{'...' if len(excluded_sheets) > 3 else ''}")
+        
         results = {}
         
-        for sheet_name, df in self.data.items():
+        for sheet_name, df in filtered_data.items():
             # Buscar columnas PnL
             pnl_col = None
             for col in df.columns:
                 if any(word in col.lower() for word in ['pnl', 'profit', 'amount', 'realized']):
                     pnl_col = col
-                    break
+                    break   
             
             if pnl_col and len(df) > 0:
                 pnl_values = df[pnl_col].dropna()
@@ -117,7 +208,9 @@ class TradingAnalyzerStandalone:
                         'total_trades': len(pnl_values),
                         'avg_profit': float(profits.mean()) if len(profits) > 0 else 0,
                         'avg_loss': float(losses.mean()) if len(losses) > 0 else 0,
-                        'pnl_values': pnl_values.tolist()
+                        'pnl_values': pnl_values.tolist(),
+                        'pnl_column': pnl_col,  # 📊 Guardar nombre de columna detectada
+                        'total_rows': len(df)   # 📏 Total de filas en la hoja
                     }
         
         return results
@@ -148,15 +241,27 @@ def main():
     if uploaded_file:
         st.sidebar.success(f"📄 **{uploaded_file.name}**")
         
-        if st.sidebar.button("🚀 Analizar Archivo", type="primary", key="unique_analyze_button_2024"):
-            analyzer = TradingAnalyzerStandalone()
+        # Crear analizador
+        analyzer = TradingAnalyzerStandalone()
+        
+        # Cargar archivo para mostrar opciones de filtros
+        with st.spinner("📁 Cargando archivo..."):
+            file_loaded = analyzer.load_file(uploaded_file)
+        
+        if file_loaded:
+            # 🗂️ UI de filtros de hojas
+            analyzer.create_sheet_selector_ui()
             
-            with st.spinner("🧠 Analizando con IA..."):
-                if analyzer.load_file(uploaded_file):
+            if st.sidebar.button("🚀 Analizar Archivo", type="primary", key="unique_analyze_button_2024"):
+                with st.spinner("🧠 Analizando con IA..."):
                     results = analyzer.analyze_data()
                     
                     if results:
                         st.success("✅ ¡Análisis completado!")
+                        
+                        # Mostrar información de qué se analizó
+                        analyzed_sheets = list(results.keys())
+                        st.info(f"📊 **Hojas analizadas:** {', '.join(analyzed_sheets)}")
                         
                         # Mostrar resultados
                         st.subheader("💰 Resultados del Análisis")
@@ -211,8 +316,8 @@ def main():
                             </div>
                             ''', unsafe_allow_html=True)
                         
-                        # Detalles por cuenta
-                        st.subheader("🏦 Análisis por Cuenta")
+                        # Detalles por cuenta/hoja
+                        st.subheader("🏦 Análisis por Cuenta/Hoja")
                         
                         for account, data in results.items():
                             pnl = data['total_pnl']
@@ -227,6 +332,7 @@ def main():
                                 <h4>{status_icon} {account}</h4>
                                 <p><strong>PnL:</strong> ${pnl:,.2f} | <strong>Win Rate:</strong> {win_rate:.1f}% | <strong>Trades:</strong> {trades:,}</p>
                                 <p><strong>Ganancias:</strong> ${data['total_profit']:,.2f} | <strong>Pérdidas:</strong> ${data['total_loss']:,.2f}</p>
+                                <p><small>📊 <strong>Columna PnL:</strong> {data.get('pnl_column', 'N/A')} | <strong>Filas totales:</strong> {data.get('total_rows', 'N/A'):,}</small></p>
                             </div>
                             ''', unsafe_allow_html=True)
                         
@@ -287,10 +393,12 @@ def main():
                             </div>
                             ''', unsafe_allow_html=True)
                     
-                    else:
-                        st.warning("📊 No se encontraron datos de PnL válidos en el archivo")
-                else:
-                    st.error("❌ Error procesando el archivo")
+                        else:
+                            st.warning("📊 No se encontraron datos de PnL válidos en el archivo")
+            else:
+                st.sidebar.info("🔧 Configura los filtros y presiona 'Analizar'")
+        else:
+            st.error("❌ Error cargando el archivo")
     
     else:
         # Pantalla de bienvenida
