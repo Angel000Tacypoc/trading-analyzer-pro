@@ -24,9 +24,6 @@ except ImportError:
         def by_sheet_numbers(nums): return SheetFilter()
         @staticmethod
         def only_futures(): return SheetFilter()
-    
-    def inject_seo_meta_tags(): pass
-    def add_footer_seo(): pass
 
 # 🔄 Sistema keep-alive (solo en producción)
 def init_keep_alive():
@@ -303,10 +300,7 @@ class TradingAnalyzerStandalone:
 def main():
     """🚀 Función principal - Versión Emergencia"""
     
-    # � Inyectar SEO meta tags
-    inject_seo_meta_tags()
-    
-    # �🔄 Inicializar keep-alive y mostrar estado
+    # 🔄 Inicializar keep-alive y mostrar estado
     init_keep_alive()
     
     # Header con SEO optimizado
@@ -566,9 +560,6 @@ def main():
             </p>
         </div>
         """, unsafe_allow_html=True)
-    
-    # Footer con SEO adicional
-    add_footer_seo()
     
     # Footer
     st.sidebar.markdown("---")
