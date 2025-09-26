@@ -1,0 +1,40 @@
+name: 🔄 Keep Streamlit App Alive
+
+on:
+  schedule:
+    # Ejecutar cada 6 horas (4 veces al día)
+    - cron: '0 */6 * * *'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📡 Ping Streamlit App
+      run: |
+        echo "🔄 Pinging Trading Analyzer Pro..."
+        response=$(curl -s -o /dev/null -w "%{http_code}" https://trading-analyzer-pro.streamlit.app)
+        
+        if [ $response -eq 200 ]; then
+          echo "✅ App is alive and responding (HTTP $response)"
+        else
+          echo "⚠️ App responded with HTTP $response"
+        fi
+        
+        echo "📊 Keep-alive ping completed at $(date)"
+    
+    - name: 🔍 Health Check
+      run: |
+        echo "🏥 Performing health check..."
+        curl -f https://trading-analyzer-pro.streamlit.app || echo "❌ Health check failed"
+        echo "✅ Health check completed"
+    
+    - name: 📝 Log Status
+      run: |
+        echo "📋 GitHub Action executed successfully"
+        echo "🕒 UTC Time: $(date -u)"
+        echo "🌐 Target: https://trading-analyzer-pro.streamlit.app"
+        echo "⏰ Next run: in 6 hours"

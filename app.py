@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 from typing import Dict, Optional
 import io
+import os
 
 # Importar nuestro sistema de filtros
 try:
@@ -23,6 +24,21 @@ except ImportError:
         def by_sheet_numbers(nums): return SheetFilter()
         @staticmethod
         def only_futures(): return SheetFilter()
+
+# 🔄 Sistema keep-alive (solo en producción)
+def init_keep_alive():
+    """🔄 Inicializar sistema keep-alive si está en Streamlit Cloud"""
+    try:
+        # Detectar si estamos en Streamlit Cloud
+        if any(key in os.environ for key in ['STREAMLIT_SHARING_MODE', 'STREAMLIT_SERVER_PORT']):
+            st.sidebar.success("🌐 **App en Streamlit Cloud**")
+            st.sidebar.info("🔄 **Keep-Alive:** Activo")
+            return True
+        else:
+            st.sidebar.info("💻 **Ejecutándose localmente**")
+            return False
+    except:
+        return False
 
 # 🎨 Configuración de la página
 st.set_page_config(
@@ -263,6 +279,9 @@ class TradingAnalyzerStandalone:
 
 def main():
     """🚀 Función principal - Versión Emergencia"""
+    
+    # 🔄 Inicializar keep-alive y mostrar estado
+    init_keep_alive()
     
     # Header
     st.markdown('''

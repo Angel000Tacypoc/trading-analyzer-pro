@@ -3,9 +3,20 @@ headless = true
 port = 8501
 enableCORS = false
 maxUploadSize = 200
+maxMessageSize = 200
+enableXsrfProtection = false
+fileWatcherType = "auto"
 
 [browser]
 gatherUsageStats = false
+
+[client]
+showErrorDetails = true
+toolbarMode = "auto"
+
+[runner]
+fastReruns = true
+enforceSerializableSessionState = false
 
 [theme]
 primaryColor = "#00d2d3"
